@@ -6,4 +6,5 @@ pyrebase4
 python-dotenv
 streamlit-cookies-manager
 setuptools>=60.0.0
+openpyxl>=3.1.2
 
