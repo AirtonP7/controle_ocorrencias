@@ -1,6 +1,6 @@
 # 📋 Sistema de Controle de Ocorrências
 
-Sistema web completo e responsivo para registro, monitoramento e gestão de ocorrências em unidades e filiais do Grupo Max.
+Sistema web completo e responsivo para registro, monitoramento e gestão de ocorrências em unidades e filiais.
 
 Desenvolvido com foco em **colaboradores, técnicos e administradores**, este sistema permite controle total sobre os atendimentos, pendências, relatórios e performance da equipe.
 
