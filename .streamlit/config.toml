@@ -1,0 +1,11 @@
+[theme]
+base = "dark"
+primaryColor = "#4a90e2"  # Azul suave
+backgroundColor = "#0e1117"  # Fundo escuro padrão
+secondaryBackgroundColor = "#1e1e1e"  # Fundo secundário um pouco mais claro
+textColor = "#ffffff"  # Texto branco
+font = "sans serif"  # Fonte limpa e moderna
+
+
+
+

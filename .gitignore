@@ -1,0 +1,4 @@
+.env
+*.pyc
+__pycache__/
+controle-ocorrencias-fe8c5-firebase-adminsdk-fbsvc-*.json

@@ -1,0 +1,8 @@
+streamlit
+pandas
+plotly
+firebase-admin
+pyrebase4
+python-dotenv
+streamlit-cookies-manager
+
