@@ -1,4 +1,4 @@
-# 📋 Sistema de Controle de Ocorrências - Grupo Max
+# 📋 Sistema de Controle de Ocorrências
 
 Sistema web completo e responsivo para registro, monitoramento e gestão de ocorrências em unidades e filiais do Grupo Max.
 
