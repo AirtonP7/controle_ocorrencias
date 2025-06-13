@@ -63,7 +63,7 @@ def contato_feedback():
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown("""
             <a href='https://wa.me/5585985762890?text=Olá%2C%20estou%20precisando%20de%20suporte.' target='_blank'>
@@ -82,12 +82,12 @@ def contato_feedback():
                 <img src='https://i.postimg.cc/8c2BsLD6/link-3d.png' width='80' height='80' style='border-radius: 50%;'>
             </a>
         """, unsafe_allow_html=True)
-    with col4:
-        st.markdown("""
-            <a href='mailto:airtonpereiradev@gmail.com' target='_blank'>
-                <img src='https://i.postimg.cc/13xJz15j/gmail-3d.png' width='80' height='80' style='border-radius: 20%;'>
-            </a>
-        """, unsafe_allow_html=True)
+    #with col4:
+        #st.markdown("""
+            #<a href='mailto:airtonpereiradev@gmail.com' target='_blank'>
+                #<img src='https://i.postimg.cc/13xJz15j/gmail-3d.png' width='80' height='80' style='border-radius: 20%;'>
+            #</a>
+        #""", unsafe_allow_html=True)
 
     st.markdown("---")
     st.subheader("📣 Envie um Feedback direto")
