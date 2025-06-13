@@ -23,7 +23,7 @@ if "usuario" not in st.session_state:
 
 # Verificar a expiração da sessão
 def verificar_expiracao_sessao():
-    tempo_expiracao = timedelta(minutes=15)
+    tempo_expiracao = timedelta(minutes=10080)
     agora = datetime.now()
 
     if "ultimo_acesso" in st.session_state:
