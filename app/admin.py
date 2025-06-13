@@ -68,23 +68,22 @@ def secao_usuarios():
         st.success("Usuário cadastrado com sucesso!")
         del st.session_state["msg_sucesso_usuario"]
 
-
-
-
     # REGISTRAR NOVO USUÁRIO
     if aba == "Registrar":
         st.subheader("Registrar Novo Usuário")
-
         DOMINIO_PADRAO = "@grupomax.com"
+
+        perfis_disponiveis = ["admin", "colaborador"]
+        if st.session_state.perfil == "superadmin":
+            perfis_disponiveis.insert(0, "superadmin")
 
         with st.form("form_usuario"):
             username = st.text_input("Usuário*", key="new_login")
             nome = st.text_input("Nome completo*", key="new_nome")
-            perfil = st.selectbox("Perfil*", ["", "admin","superadmin", "colaborador"], key="new_perfil")
+            perfil = st.selectbox("Perfil*", [""] + perfis_disponiveis, key="new_perfil")
             cargo = st.text_input("Cargo*", key="new_cargo")
             setor = st.text_input("Setor*", key="new_setor")
             senha = st.text_input("Senha do usuário*", type="password", key="new_senha")
-
             submitted = st.form_submit_button("Cadastrar Usuário")
             st.text("* Campos Obrigatorios")
 
@@ -92,35 +91,30 @@ def secao_usuarios():
             if username and nome and perfil and senha:
                 email = f"{username.lower()}{DOMINIO_PADRAO}"
 
-                # 1. Criar no Firestore
-                adicionar_usuario(email, nome, perfil, cargo, setor)
-
-                # 2. Criar no Firebase Auth com a senha definida
-                resultado_firebase = criar_usuario_firebase(email, senha)
-
-                # 3. Exibir resultado
-                st.success("✅ Usuário cadastrado com sucesso!")
-                st.info(f"📧 E-mail gerado: `{email}`")
-                st.caption("Esse será o login do usuário.")
-
-                st.write(resultado_firebase)
-
-                for campo in ["new_login", "new_nome", "new_perfil", "new_cargo", "new_setor", "new_senha"]:
-                    st.session_state.pop(campo, None)
-
-                st.rerun()
+                if perfil == "superadmin" and st.session_state.perfil != "superadmin":
+                    st.warning("⛔ Apenas SuperAdmins podem criar outros SuperAdmins.")
+                else:
+                    adicionar_usuario(email, nome, perfil, cargo, setor)
+                    resultado_firebase = criar_usuario_firebase(email, senha)
+                    st.success("✅ Usuário cadastrado com sucesso!")
+                    st.info(f"📧 E-mail gerado: `{email}`")
+                    st.write(resultado_firebase)
+                    for campo in ["new_login", "new_nome", "new_perfil", "new_cargo", "new_setor", "new_senha"]:
+                        st.session_state.pop(campo, None)
+                    st.rerun()
             else:
                 st.error("⚠️ Preencha todos os campos obrigatórios.")
 
-
-
-    # EDITAR USUÁRIO
     elif aba == "Editar":
         st.subheader("Editar ou Excluir Usuários")
-
         usuarios = listar_usuarios()
+
+        # Filtro para esconder superadmins se não for superadmin
+        if st.session_state.perfil != "superadmin":
+            usuarios = [u for u in usuarios if u["perfil"] != "superadmin"]
+
         if not usuarios:
-            st.info("Nenhum usuário cadastrado.")
+            st.info("Nenhum usuário disponível.")
         else:
             usuarios_opcoes = {f"{u['login']} - {u['nome_completo']} ({u['perfil']})": u for u in usuarios}
             escolha = st.selectbox("Selecione um usuário para editar", [""] + list(usuarios_opcoes.keys()))
@@ -134,33 +128,28 @@ def secao_usuarios():
                 cargo = user['cargo']
                 setor = user['setor']
 
-                if perfil == "superadmin" and st.session_state.perfil != "superadmin":
-                    st.info("⛔ Você não tem permissão para editar um SuperAdmin.")
-                else:
-                    with st.expander(f"Editar usuário: {nome}", expanded=True):
-                        with st.form(f"form_editar_usuario_{id_}"):
-                            st.markdown(f"**Login (e-mail):** `{login}`")  # e-mail fixo
-                            novo_nome = st.text_input("Nome completo", value=nome, key=f"nome_{id_}")
+                with st.expander(f"Editar usuário: {nome}", expanded=True):
+                    with st.form(f"form_editar_usuario_{id_}"):
+                        st.markdown(f"**Login (e-mail):** `{login}`")
+                        novo_nome = st.text_input("Nome completo", value=nome, key=f"nome_{id_}")
 
-                            perfis_disponiveis = ["admin", "colaborador"]
-                            if st.session_state.perfil == "superadmin":
-                                perfis_disponiveis.insert(0, "superadmin")
+                        perfis_disponiveis = ["admin", "colaborador"]
+                        if st.session_state.perfil == "superadmin":
+                            perfis_disponiveis.insert(0, "superadmin")
 
-                            novo_perfil = st.selectbox("Perfil", perfis_disponiveis, index=perfis_disponiveis.index(perfil), key=f"perfil_{id_}")
-                            novo_cargo = st.text_input("Cargo", value=cargo, key=f"cargo_{id_}")
-                            novo_setor = st.text_input("Setor", value=setor, key=f"setor_{id_}")
+                        novo_perfil = st.selectbox("Perfil", perfis_disponiveis,
+                                                   index=perfis_disponiveis.index(perfil) if perfil in perfis_disponiveis else 0,
+                                                   key=f"perfil_{id_}")
+                        novo_cargo = st.text_input("Cargo", value=cargo, key=f"cargo_{id_}")
+                        novo_setor = st.text_input("Setor", value=setor, key=f"setor_{id_}")
 
-                            if st.form_submit_button("Salvar Alterações"):
-                                editar_usuario(id_, login, novo_nome, novo_perfil, novo_cargo, novo_setor)
+                        if st.form_submit_button("Salvar Alterações"):
+                            editar_usuario(id_, login, novo_nome, novo_perfil, novo_cargo, novo_setor)
+                            for campo in [f"nome_{id_}", f"perfil_{id_}", f"cargo_{id_}", f"setor_{id_}"]:
+                                st.session_state.pop(campo, None)
+                            st.success("Usuário editado com sucesso!")
+                            st.rerun()
 
-                                for campo in [f"nome_{id_}", f"perfil_{id_}", f"cargo_{id_}", f"setor_{id_}"]:
-                                    st.session_state.pop(campo, None)
-
-                                st.success("Usuário editado com sucesso!")
-                                st.rerun()
-
-
-            # Exclusão de usuário
             st.markdown("---")
             st.markdown("### 🗑️ Excluir Usuário")
             excluir_opcoes = {f"{u['login']} - {u['nome_completo']} ({u['perfil']})": u['id'] for u in usuarios}
@@ -175,110 +164,77 @@ def secao_usuarios():
                 else:
                     if st.button("Confirmar Exclusão"):
                         excluir_usuario(id_usuario_excluir)
-
                         try:
                             user_firebase = admin_auth.get_user_by_email(usuario_info["login"])
                             resultado_exclusao = excluir_usuario_firebase(user_firebase.uid)
                             st.info(resultado_exclusao)
                         except Exception as e:
                             st.warning(f"⚠️ Usuário excluído do Firestore, mas não foi possível remover do Firebase Auth: {e}")
-
                         st.success("Usuário excluído com sucesso!")
                         st.rerun()
 
-
-
-
-    # RELATÓRIO DE USUÁRIOS
     elif aba == "Relatório":
         st.subheader("📋 Relatório de Usuários")
-
         usuarios = listar_usuarios()
+
+        if st.session_state.perfil != "superadmin":
+            usuarios = [u for u in usuarios if u["perfil"] != "superadmin"]
+
         if usuarios:
-            df = pd.DataFrame(usuarios)
+            df = pd.DataFrame(usuarios).rename(columns={
+                "login": "Login", "nome_completo": "Nome", "perfil": "Perfil",
+                "cargo": "Cargo", "setor": "Setor"
+            })[["Login", "Nome", "Perfil", "Cargo", "Setor"]]
 
-            if not df.empty:
-                df = df.rename(columns={
-                    "login": "Login",
-                    "nome_completo": "Nome",
-                    "perfil": "Perfil",
-                    "cargo": "Cargo",
-                    "setor": "Setor"
-                })
+            with st.expander("🔎 Filtros"):
+                col1, col2 = st.columns(2)
+                login_filtro = col1.selectbox("Login", ["Todos"] + sorted(df["Login"].unique()))
+                nome_filtro = col2.selectbox("Nome", ["Todos"] + sorted(df["Nome"].unique()))
+                col3, col4 = st.columns(2)
+                perfil_filtro = col3.selectbox("Perfil", ["Todos"] + sorted(df["Perfil"].unique()))
+                cargo_filtro = col4.selectbox("Cargo", ["Todos"] + sorted(df["Cargo"].unique()))
+                setor_filtro = st.selectbox("Setor", ["Todos"] + sorted(df["Setor"].unique()))
 
-                colunas = ["Login", "Nome", "Perfil", "Cargo", "Setor"]
-                df = df[colunas]
+                if login_filtro != "Todos":
+                    df = df[df["Login"] == login_filtro]
+                if nome_filtro != "Todos":
+                    df = df[df["Nome"] == nome_filtro]
+                if perfil_filtro != "Todos":
+                    df = df[df["Perfil"] == perfil_filtro]
+                if cargo_filtro != "Todos":
+                    df = df[df["Cargo"] == cargo_filtro]
+                if setor_filtro != "Todos":
+                    df = df[df["Setor"] == setor_filtro]
 
-                # 🔍 Filtros dinâmicos
-                with st.expander("🔎 Filtros"):
-                    col1, col2 = st.columns(2)
-                    login_filtro = col1.selectbox("Login", ["Todos"] + sorted(df["Login"].unique()))
-                    nome_filtro = col2.selectbox("Nome", ["Todos"] + sorted(df["Nome"].unique()))
-                    col3, col4 = st.columns(2)
-                    perfil_filtro = col3.selectbox("Perfil", ["Todos"] + sorted(df["Perfil"].unique()))
-                    cargo_filtro = col4.selectbox("Cargo", ["Todos"] + sorted(df["Cargo"].unique()))
-                    setor_filtro = st.selectbox("Setor", ["Todos"] + sorted(df["Setor"].unique()))
+            st.dataframe(
+                df.style.set_properties(**{
+                    'background-color': '#2d2d2d' if st.session_state.get("tema") == "Escuro" else '#ffffff',
+                    'color': '#ffffff' if st.session_state.get("tema") == "Escuro" else '#000000',
+                }),
+                use_container_width=True
+            )
 
-                    if login_filtro != "Todos":
-                        df = df[df["Login"] == login_filtro]
-                    if nome_filtro != "Todos":
-                        df = df[df["Nome"] == nome_filtro]
-                    if perfil_filtro != "Todos":
-                        df = df[df["Perfil"] == perfil_filtro]
-                    if cargo_filtro != "Todos":
-                        df = df[df["Cargo"] == cargo_filtro]
-                    if setor_filtro != "Todos":
-                        df = df[df["Setor"] == setor_filtro]
+            if "relatorio_usuarios_pronto" not in st.session_state:
+                st.session_state["relatorio_usuarios_pronto"] = False
 
-                # ✅ Exibir tabela
-                st.dataframe(
-                    df.style.set_properties(**{
-                        'background-color': '#2d2d2d' if st.session_state.get("tema") == "Escuro" else '#ffffff',
-                        'color': '#ffffff' if st.session_state.get("tema") == "Escuro" else '#000000',
-                    }),
-                    use_container_width=True
-                )
+            if st.button("📊 Preparar Relatório"):
+                with st.spinner("Preparando o relatório..."):
+                    for i in range(101):
+                        time.sleep(0.005)
+                        st.progress(i)
+                    st.session_state["relatorio_usuarios_pronto"] = True
 
-                # 📥 Exportar para Excel
+            if st.session_state["relatorio_usuarios_pronto"]:
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                    df.to_excel(writer, index=False, sheet_name="Usuários")
+                buffer.seek(0)
+                st.success("✅ Relatório pronto para download.")
+                st.download_button("⬇️ Baixar Excel", buffer, "usuarios_grupomax.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-                # Estado para controle do carregamento
-                if "relatorio_usuarios_pronto" not in st.session_state:
-                    st.session_state["relatorio_usuarios_pronto"] = False
-
-                # Botão inicial
-                if st.button("📊 Preparar Relatório"):
-                    st.session_state["relatorio_usuarios_pronto"] = False
-
-                    with st.spinner("Preparando o relatório..."):
-                        progress_bar = st.progress(0, text="Gerando relatório... 0%")
-                        for i in range(101):
-                            time.sleep(0.01)
-                            progress_bar.progress(i, text=f"Gerando relatório... {i}%")
-
-                        st.session_state["relatorio_usuarios_pronto"] = True
-
-                # Botão final de download
-                if st.session_state["relatorio_usuarios_pronto"]:
-                    buffer = io.BytesIO()
-                    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-                        df.to_excel(writer, index=False, sheet_name="Usuários")
-                    buffer.seek(0)
-
-                    st.success("✅ Relatório pronto para download.")
-                    st.download_button(
-                        label="⬇️ Baixar Excel",
-                        data=buffer,
-                        file_name="usuarios_grupomax.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True
-                    )
-
-
-
-            else:
-                st.warning("⚠️ Nenhum dado encontrado para exibir.")
         else:
             st.info("ℹ️ Nenhum usuário cadastrado.")
+
 
 
 
