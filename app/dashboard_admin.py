@@ -38,9 +38,9 @@ def painel_dashboard_admin():
     df["Data"] = pd.to_datetime(df["Data"])
     df["Dias Pendentes"] = pd.to_numeric(df["Dias Pendentes"], errors="coerce")
 
-    criticas = df[(df["Status"] == "Pendente") & (df["Dias Pendentes"] > 7)]
+    criticas = df[(df["Status"] == "Pendente") & (df["Dias Pendentes"] > 2)]
     if not criticas.empty:
-        st.warning(f"⚠️ {len(criticas)} ocorrência(s) estão pendentes há mais de 7 dias!")
+        st.warning(f"⚠️ {len(criticas)} ocorrência(s) estão pendentes há mais de 2 dias!")
 
     st.markdown("### 🗓️ Filtros por Período")
     col1, col2 = st.columns(2)
