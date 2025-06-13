@@ -5,4 +5,5 @@ firebase-admin
 pyrebase4
 python-dotenv
 streamlit-cookies-manager
+setuptools>=60.0.0
 
