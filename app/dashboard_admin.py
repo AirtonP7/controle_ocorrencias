@@ -93,7 +93,7 @@ def painel_dashboard_admin():
             title_font=dict(color=cor_texto),
             legend_font=dict(color=cor_texto),
             showlegend=True,
-            margin=dict(t=50, b=10, l=10, r=10)  # Ajuste de margens para evitar cortes
+            margin=dict(t=50, b=50, l=50, r=50)  # Ajuste de margens para evitar cortes
         )
 
         st.plotly_chart(fig, use_container_width=True)
