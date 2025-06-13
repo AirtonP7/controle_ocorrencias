@@ -187,7 +187,7 @@ def login():
        # Rodapé elegante com destaque
     st.markdown(
         f"""
-        <div style='text-align: center; margin-top: 80px; font-size: 18px; color: white;'>
+        <div style='text-align: center; margin-top: 70px; font-size: 18px; color: white;'>
             <p>v1.2.0</p>
             <p>Copyright © Airton Pereira 2025</p>
         </div>
