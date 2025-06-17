@@ -531,7 +531,7 @@ def secao_ocorrencias(usuario):
                     st.rerun()
 
 
-
+    #RELATORIO OCORRENCIAS
     elif aba_oco == "Relatório":
         st.subheader("Relatório de Ocorrências")
         ocorrencias = listar_ocorrencias()
@@ -539,20 +539,31 @@ def secao_ocorrencias(usuario):
             df = pd.DataFrame(ocorrencias)
 
             if not df.empty:
+                # Converte a data para datetime
+                df["Data"] = pd.to_datetime(df["data_registro"], errors="coerce")
+
+                # Recalcula os dias pendentes
+                hoje = date.today()
+                df["Dias Pendentes"] = df.apply(
+                    lambda row: (hoje - row["Data"].date()).days if row["status_atividade"] == "Pendente" else 0,
+                    axis=1
+                )
+
+                # Renomeia colunas para exibição
                 df = df.rename(columns={
                     "id": "ID",
-                    "data_registro": "Data",
                     "usuario_solicitante": "Solicitante",
                     "unidade_solicitante": "Unidade",
                     "descricao": "Descrição",
                     "tecnico_responsavel": "Técnico",
                     "status_atividade": "Status",
-                    "dias_pendentes": "Dias Pendentes",
                     "observacao": "Observação"
                 })
 
+                # Define a ordem correta das colunas
                 colunas = ["ID", "Data", "Solicitante", "Unidade", "Descrição", "Técnico", "Status", "Dias Pendentes", "Observação"]
                 df = df[colunas]
+
 
                 # Filtros dinâmicos
                 with st.expander("🔎 Filtros"):
