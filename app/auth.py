@@ -188,7 +188,7 @@ def login():
     st.markdown(
         f"""
         <div style='text-align: center; margin-top: 80px; font-size: 18px; color: white;'>
-            <p>v1.2.0</p>
+            <p>v1.2.2</p>
             <p>Copyright © Airton Pereira 2025</p>
         </div>
         """,
