@@ -393,16 +393,13 @@ def secao_ocorrencias(usuario):
 
     if aba_oco == "Registrar":
         st.subheader("Registrar Nova Ocorrência")
-
-        # Se solicitado, limpa os campos antes de renderizar o formulário
         if st.session_state.get("limpar_ocorrencia", False):
             for campo in ["descricao", "unidade_solicitante", "usuario_solicitante", "tecnico_responsavel", "status_atividade", "observacao"]:
                 st.session_state[campo] = ""
-            st.session_state["limpar_ocorrencia"] = False  # reseta o gatilho
+            st.session_state["limpar_ocorrencia"] = False
 
         unidades = listar_unidades()
         unidades_disp = [""] + [u['nome'] for u in unidades]
-
         tecnicos = listar_usuarios()
         tecnicos_disp = [""] + [t['login'] for t in tecnicos]
 
@@ -417,14 +414,7 @@ def secao_ocorrencias(usuario):
             st.text("* Campos Obrigatórios")
 
         if submitted:
-            if all([
-                    st.session_state["descricao"],
-                    st.session_state["unidade_solicitante"],
-                    st.session_state["usuario_solicitante"],
-                    st.session_state["tecnico_responsavel"],
-                    st.session_state["status_atividade"]
-                ]):
-
+            if all([st.session_state["descricao"], st.session_state["unidade_solicitante"], st.session_state["usuario_solicitante"], st.session_state["tecnico_responsavel"], st.session_state["status_atividade"]]):
                 adicionar_ocorrencia(
                     unidade_solicitante=st.session_state["unidade_solicitante"],
                     usuario_solicitante=st.session_state["usuario_solicitante"],
@@ -433,25 +423,20 @@ def secao_ocorrencias(usuario):
                     status_atividade=st.session_state["status_atividade"],
                     observacao=st.session_state["observacao"],
                 )
-
                 st.session_state["msg_sucesso_ocorrencia"] = True
-                st.session_state["limpar_ocorrencia"] = True  # 🔁 ativa limpeza na próxima renderização
+                st.session_state["limpar_ocorrencia"] = True
                 st.rerun()
             else:
                 st.error("Preencha todos os campos obrigatórios.")
 
-
-    #EDITAR OCORRENCIAS
     elif aba_oco == "Editar":
         st.subheader("Editar ou Excluir Ocorrências")
-
         ocorrencias = listar_ocorrencias()
         if not ocorrencias:
             st.info("Nenhuma ocorrência cadastrada.")
             return
 
         df = pd.DataFrame(ocorrencias)
-
         if not df.empty:
             df = df.rename(columns={
                 "id": "ID",
@@ -464,17 +449,15 @@ def secao_ocorrencias(usuario):
                 "observacao": "Observação"
             })
 
-            # Filtros dinâmicos
             with st.expander("🔎 Filtros"):
                 col1, col2 = st.columns(2)
-                unidade_filtro = col1.selectbox("Unidade", ["Todos"] + sorted(df["Unidade"].dropna().unique().tolist()))
-                status_filtro = col2.selectbox("Status", ["Todos"] + sorted(df["Status"].dropna().unique().tolist()))
+                unidade_filtro = col1.selectbox("Unidade", ["Todos"] + sorted(df["Unidade"].dropna().unique().tolist()), key="filtro_editar_unidade")
+                status_filtro = col2.selectbox("Status", ["Todos"] + sorted(df["Status"].dropna().unique().tolist()), key="filtro_editar_status")
                 col3, col4 = st.columns(2)
-                tecnico_filtro = col3.selectbox("Técnico Responsável", ["Todos"] + sorted(df["Técnico"].dropna().unique().tolist()))
-                solicitante_filtro = col4.selectbox("Solicitante", ["Todos"] + sorted(df["Solicitante"].dropna().unique().tolist()))
-
-                data_inicio = st.date_input("Data Início")
-                data_fim = st.date_input("Data Fim")
+                tecnico_filtro = col3.selectbox("Técnico Responsável", ["Todos"] + sorted(df["Técnico"].dropna().unique().tolist()), key="filtro_editar_tecnico")
+                solicitante_filtro = col4.selectbox("Solicitante", ["Todos"] + sorted(df["Solicitante"].dropna().unique().tolist()), key="filtro_editar_solicitante")
+                data_inicio = st.date_input("Data Início", key="filtro_editar_inicio")
+                data_fim = st.date_input("Data Fim", key="filtro_editar_fim")
 
                 if unidade_filtro != "Todos":
                     df = df[df["Unidade"] == unidade_filtro]
@@ -485,10 +468,9 @@ def secao_ocorrencias(usuario):
                 if solicitante_filtro != "Todos":
                     df = df[df["Solicitante"] == solicitante_filtro]
                 if data_inicio and data_fim:
-                    df["Data"] = pd.to_datetime(df["Data"]).dt.date
+                    df["Data"] = pd.to_datetime(df["Data"], errors="coerce").dt.date
                     df = df[(df["Data"] >= data_inicio) & (df["Data"] <= data_fim)]
 
-            # Aplica os filtros no dataframe original
             ocorrencias_filtradas = df.to_dict(orient="records")
         else:
             ocorrencias_filtradas = []
@@ -502,54 +484,32 @@ def secao_ocorrencias(usuario):
                 ocorrencia = opcoes[escolha]
                 with st.form(f"form_editar_ocorrencia_{ocorrencia['ID']}"):
                     descricao = st.text_input("Descrição", ocorrencia["Descrição"])
-
                     unidades = listar_unidades()
-                    unidades_disp = [u['nome'] for u in unidades]
-                    unidade_solicitante = st.selectbox("Unidade Solicitante", unidades_disp, index=unidades_disp.index(ocorrencia["Unidade"]))
-
+                    unidade_solicitante = st.selectbox("Unidade Solicitante", [u['nome'] for u in unidades], index=[u['nome'] for u in unidades].index(ocorrencia["Unidade"]))
                     tecnicos = listar_usuarios()
                     tecnicos_disp = [t['login'] for t in tecnicos]
                     usuario_solicitante = st.selectbox("Usuário Solicitante", tecnicos_disp, index=tecnicos_disp.index(ocorrencia["Solicitante"]))
                     tecnico_responsavel = st.selectbox("Técnico Responsável", tecnicos_disp, index=tecnicos_disp.index(ocorrencia["Técnico"]))
-
                     status = st.selectbox("Status", ["Pendente", "Resolvida"], index=["Pendente", "Resolvida"].index(ocorrencia["Status"]))
                     observacao = st.text_area("Observação", ocorrencia["Observação"])
-
                     if st.form_submit_button("Salvar Alterações"):
-                        editar_ocorrencia(
-                            id_ocorrencia=ocorrencia["ID"],
-                            nova_descricao=descricao,
-                            novo_status=status,
-                            nova_observacao=observacao
-                        )
+                        editar_ocorrencia(ocorrencia["ID"], descricao, status, observacao)
                         st.success("Ocorrência atualizada com sucesso!")
                         st.rerun()
-
                 if st.button("🗑️ Excluir Ocorrência"):
                     excluir_ocorrencia(ocorrencia["ID"])
                     st.warning("Ocorrência excluída com sucesso!")
                     st.rerun()
 
-
-    #RELATORIO OCORRENCIAS
     elif aba_oco == "Relatório":
         st.subheader("Relatório de Ocorrências")
         ocorrencias = listar_ocorrencias()
         if ocorrencias:
             df = pd.DataFrame(ocorrencias)
-
             if not df.empty:
-                # Converte a data para datetime
                 df["Data"] = pd.to_datetime(df["data_registro"], errors="coerce")
-
-                # Recalcula os dias pendentes
                 hoje = date.today()
-                df["Dias Pendentes"] = df.apply(
-                    lambda row: (hoje - row["Data"].date()).days if row["status_atividade"] == "Pendente" else 0,
-                    axis=1
-                )
-
-                # Renomeia colunas para exibição
+                df["Dias Pendentes"] = df.apply(lambda row: (hoje - row["Data"].date()).days if row["status_atividade"] == "Pendente" else 0, axis=1)
                 df = df.rename(columns={
                     "id": "ID",
                     "usuario_solicitante": "Solicitante",
@@ -559,27 +519,19 @@ def secao_ocorrencias(usuario):
                     "status_atividade": "Status",
                     "observacao": "Observação"
                 })
-
-                # Define a ordem correta das colunas
                 colunas = ["ID", "Data", "Solicitante", "Unidade", "Descrição", "Técnico", "Status", "Dias Pendentes", "Observação"]
                 df = df[colunas]
 
-
-                # Filtros dinâmicos
                 with st.expander("🔎 Filtros"):
                     col1, col2 = st.columns(2)
-                    unidade_filtro = col1.selectbox("Unidade", ["Todos"] + sorted(df["Unidade"].dropna().unique().tolist()))
-                    status_filtro = col2.selectbox("Status", ["Todos"] + sorted(df["Status"].dropna().unique().tolist()))
+                    unidade_filtro = col1.selectbox("Unidade", ["Todos"] + sorted(df["Unidade"].dropna().unique().tolist()), key="filtro_relatorio_unidade")
+                    status_filtro = col2.selectbox("Status", ["Todos"] + sorted(df["Status"].dropna().unique().tolist()), key="filtro_relatorio_status")
                     col3, col4 = st.columns(2)
-                    tecnico_filtro = col3.selectbox("Técnico", ["Todos"] + sorted(df["Técnico"].dropna().unique().tolist()))
-                    solicitante_filtro = col4.selectbox("Solicitante", ["Todos"] + sorted(df["Solicitante"].dropna().unique().tolist()))
+                    tecnico_filtro = col3.selectbox("Técnico", ["Todos"] + sorted(df["Técnico"].dropna().unique().tolist()), key="filtro_relatorio_tecnico")
+                    solicitante_filtro = col4.selectbox("Solicitante", ["Todos"] + sorted(df["Solicitante"].dropna().unique().tolist()), key="filtro_relatorio_solicitante")
+                    data_inicio = st.date_input("Data Início", key="filtro_relatorio_inicio")
+                    data_fim = st.date_input("Data Fim", key="filtro_relatorio_fim")
 
-                    # Filtro por data
-                    datas_unicas = sorted(df["Data"].dropna().unique().tolist())
-                    data_inicio = st.date_input("Data Início", value=None)
-                    data_fim = st.date_input("Data Fim", value=None)
-
-                    # Aplica filtros
                     if unidade_filtro != "Todos":
                         df = df[df["Unidade"] == unidade_filtro]
                     if status_filtro != "Todos":
@@ -588,20 +540,15 @@ def secao_ocorrencias(usuario):
                         df = df[df["Técnico"] == tecnico_filtro]
                     if solicitante_filtro != "Todos":
                         df = df[df["Solicitante"] == solicitante_filtro]
-
-                    # Filtra por intervalo de data, se ambos definidos
                     if data_inicio and data_fim:
-                        df = df[df["Data"].apply(lambda d: data_inicio.strftime("%Y-%m-%d") <= d <= data_fim.strftime("%Y-%m-%d"))]
+                        df["Data"] = pd.to_datetime(df["Data"], errors="coerce").dt.date
+                        df = df[(df["Data"] >= data_inicio) & (df["Data"] <= data_fim)]
 
-                st.dataframe(
-            df.style.set_properties(**{
-                'background-color': '#2d2d2d' if st.session_state.get("tema") == "Escuro" else '#ffffff',
-                'color': '#ffffff' if st.session_state.get("tema") == "Escuro" else '#000000',
-            }),
-            use_container_width=True
-                )
+                st.dataframe(df.style.set_properties(**{
+                    'background-color': '#2d2d2d' if st.session_state.get("tema") == "Escuro" else '#ffffff',
+                    'color': '#ffffff' if st.session_state.get("tema") == "Escuro" else '#000000',
+                }), use_container_width=True)
 
-                # Exportar para Excel
                 if "relatorio_ocorrencias_pronto" not in st.session_state:
                     st.session_state["relatorio_ocorrencias_pronto"] = False
 
@@ -621,11 +568,9 @@ def secao_ocorrencias(usuario):
                     buffer.seek(0)
                     st.success("✅ Relatório de ocorrências pronto.")
                     st.download_button("⬇️ Baixar Excel", buffer, "ocorrencias_grupomax.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-            else:
-                st.warning("Erro ao gerar DataFrame das ocorrências.")
         else:
             st.info("Nenhuma ocorrência cadastrada.")
+
 
 
 def secao_logs():
@@ -705,5 +650,3 @@ def secao_logs():
 
 
          
-
-
