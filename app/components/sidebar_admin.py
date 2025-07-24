@@ -13,7 +13,7 @@ def menu_lateral_admin():
         "Unidades": "🏢 Unidades",
         "Ocorrencias": "📄 Ocorrências",
         "RedefinirSenha": "🔑 Resetar Senha",
-        "Logs": "🧾 Logs",
+        #"Logs": "🧾 Logs",
         "Contato": "💬 Fale com o Desenvolvedor",
         "Sair": "🚪 Sair"
     }
