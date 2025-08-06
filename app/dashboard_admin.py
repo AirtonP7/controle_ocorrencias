@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import date, datetime
-from app.oco_db import listar_ocorrencias
 from app.temas import aplicar_tema
+from app.conexao_banco.oco_db import listar_ocorrencias_por_data
 
 def painel_dashboard_admin():
     st.header("📊 Painel de Indicadores - Admin")
@@ -13,11 +13,27 @@ def painel_dashboard_admin():
     fundo_grafico = "#121212" if tema == "Escuro" else "#B2DFDB"
     cor_texto = "#E0E0E0" if tema == "Escuro" else "#000000"
 
-    ocorrencias = listar_ocorrencias()
+    # 🗓️ Entrada de período e status
+    st.markdown("### 🗓️ Filtros por Período e Status")
+    col1, col2, col3 = st.columns(3)
+
+    hoje = date.today()
+    data_inicial = col1.date_input("De", value=hoje)
+    data_final = col2.date_input("Até", value=hoje)
+    status_opcao = col3.radio("Status", ["Todos", "Pendente", "Resolvida"], horizontal=True)
+
+    # ⚡️ Coleta eficiente das ocorrências por data
+    dias_periodo = (data_final - data_inicial).days + 1
+    ocorrencias = []
+    for i in range(dias_periodo):
+        data_filtro = (data_inicial + pd.Timedelta(days=i)).strftime("%Y-%m-%d")
+        ocorrencias += listar_ocorrencias_por_data(data_filtro)
+
     if not ocorrencias:
-        st.warning("Nenhuma ocorrência registrada.")
+        st.warning("Nenhuma ocorrência registrada no período.")
         return
 
+    # 🔢 Preparação dos dados
     dados = []
     for o in ocorrencias:
         data = o['data_registro']
@@ -37,38 +53,21 @@ def painel_dashboard_admin():
     df["Data"] = pd.to_datetime(df["Data"])
     df["Dias Pendentes"] = pd.to_numeric(df["Dias Pendentes"], errors="coerce")
 
+    if status_opcao != "Todos":
+        df = df[df["Status"] == status_opcao]
+
+    if df.empty:
+        st.warning("Nenhuma ocorrência no período/status selecionado.")
+        return
+
     criticas = df[(df["Status"] == "Pendente") & (df["Dias Pendentes"] > 7)]
     if not criticas.empty:
         st.warning(f"⚠️ {len(criticas)} ocorrência(s) estão pendentes há mais de 7 dias!")
 
-    # 🗓️ Filtros por período e status
-    st.markdown("### 🗓️ Filtros por Período e Status")
-    col1, col2, col3 = st.columns(3)
-
-    hoje = date.today()
-    data_min, data_max = df["Data"].min().date(), df["Data"].max().date()
-
-    data_inicial = col1.date_input("De", value=hoje, min_value=data_min, max_value=data_max)
-    data_final = col2.date_input("Até", value=hoje, min_value=data_min, max_value=data_max)
-
-    status_opcao = col3.radio("Status", ["Todos", "Pendente", "Resolvida"], horizontal=True)
-
-    df_filtrado = df[
-        (df["Data"].dt.date >= data_inicial) &
-        (df["Data"].dt.date <= data_final)
-    ]
-
-    if status_opcao != "Todos":
-        df_filtrado = df_filtrado[df_filtrado["Status"] == status_opcao]
-
-    if df_filtrado.empty:
-        st.warning("Nenhuma ocorrência no período/status selecionado.")
-        return
-
     # 📊 Métricas
-    total = len(df_filtrado)
-    pendentes = (df_filtrado["Status"] == "Pendente").sum()
-    resolvidas = (df_filtrado["Status"] == "Resolvida").sum()
+    total = len(df)
+    pendentes = (df["Status"] == "Pendente").sum()
+    resolvidas = (df["Status"] == "Resolvida").sum()
     col1, col2, col3 = st.columns(3)
     col1.metric("📋 Total de Ocorrências", total)
     col2.metric("🕓 Pendentes", pendentes)
@@ -77,15 +76,14 @@ def painel_dashboard_admin():
     st.markdown("---")
     st.markdown("### 🧠 Visão Geral")
 
-    # 📈 Gráfico de status (Pizza)
+    # 🔈 Pizza de status
     col1, col2 = st.columns(2)
     with col1:
-        status_count = df_filtrado["Status"].value_counts().reset_index()
+        status_count = df["Status"].value_counts().reset_index()
         status_count.columns = ["Status", "Total"]
         fig = px.pie(status_count, values="Total", names="Status",
                      color_discrete_sequence=px.colors.qualitative.Pastel,
                      title="Distribuição de Status", hole=0.4)
-
         fig.update_traces(textinfo="value+percent", textposition="outside", textfont=dict(size=14, color=cor_texto))
         fig.update_layout(paper_bgcolor=fundo_grafico, plot_bgcolor=fundo_grafico,
                           font=dict(color=cor_texto), title_font=dict(color=cor_texto),
@@ -95,7 +93,7 @@ def painel_dashboard_admin():
 
     # 📊 Ocorrências por dia
     with col2:
-        df_diario = df_filtrado.groupby(df_filtrado["Data"].dt.date).size().reset_index(name="Total")
+        df_diario = df.groupby(df["Data"].dt.date).size().reset_index(name="Total")
         fig = px.bar(df_diario, x="Data", y="Total", title="Ocorrências por Dia", text="Total")
         fig.update_traces(textposition="outside", textfont=dict(size=12, color=cor_texto))
         fig.update_layout(
@@ -108,9 +106,9 @@ def painel_dashboard_admin():
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # 📈 Evolução por Status (Área)
+    # 📈 Evolução por status
     st.markdown("### 📈 Evolução por Status")
-    df_area = df_filtrado.groupby([df_filtrado["Data"].dt.date, "Status"]).size().reset_index(name="Total")
+    df_area = df.groupby([df["Data"].dt.date, "Status"]).size().reset_index(name="Total")
     fig = px.area(df_area, x="Data", y="Total", color="Status", line_group="Status", title="Status ao longo do tempo")
     fig.update_layout(
         paper_bgcolor=fundo_grafico, plot_bgcolor=fundo_grafico,
@@ -121,9 +119,9 @@ def painel_dashboard_admin():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # 👨‍🔧 Ocorrências por Técnico
-    st.markdown("### 👨‍🔧 Ocorrências por Técnico")
-    tecnico_count = df_filtrado["Técnico"].value_counts().reset_index()
+    # 👨‍💼 Ocorrências por técnico
+    st.markdown("### 👨‍💼 Ocorrências por Técnico")
+    tecnico_count = df["Técnico"].value_counts().reset_index()
     tecnico_count.columns = ["Técnico", "Total"]
     fig = px.bar(tecnico_count, x="Total", y="Técnico", orientation='h',
                  color="Técnico", title="Volume por Técnico", text="Total")
@@ -138,9 +136,9 @@ def painel_dashboard_admin():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # 📊 NOVO GRÁFICO: Média de Chamados por Dia por Técnico
+    # 📊 Média por técnico
     st.markdown("### 📊 Média Diária de Chamados por Técnico")
-    df_medias = df_filtrado.groupby(["Técnico", df_filtrado["Data"].dt.date]).size().reset_index(name="Chamados")
+    df_medias = df.groupby(["Técnico", df["Data"].dt.date]).size().reset_index(name="Chamados")
     media_por_tecnico = df_medias.groupby("Técnico")["Chamados"].mean().reset_index(name="Média por Dia")
     media_por_tecnico["Média por Dia"] = media_por_tecnico["Média por Dia"].round(2)
     media_por_tecnico = media_por_tecnico.sort_values(by="Média por Dia", ascending=False)
@@ -157,9 +155,9 @@ def painel_dashboard_admin():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # 🏢 Ocorrências por Unidade
+    # 🏢 Ocorrências por unidade
     st.markdown("### 🏢 Ocorrências por Unidade")
-    unidade_count = df_filtrado["Unidade"].value_counts().reset_index()
+    unidade_count = df["Unidade"].value_counts().reset_index()
     unidade_count.columns = ["Unidade", "Total"]
     fig = px.bar(unidade_count, x="Unidade", y="Total", color="Unidade",
                  title="Ocorrências por Loja", text="Total")
@@ -174,7 +172,7 @@ def painel_dashboard_admin():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # 🔎 Pendências Críticas
+    # 🔎 Pendências críticas
     st.markdown("### 🔎 Ocorrências Pendentes Críticas")
     if not criticas.empty:
         st.dataframe(criticas[["Data", "Unidade", "Técnico", "Dias Pendentes", "Descrição"]], use_container_width=True)
