@@ -29,7 +29,7 @@ def adicionar_ocorrencia(unidade_solicitante, usuario_solicitante,
         detalhes=f"Técnico: {tecnico_responsavel}, Status: {status_atividade}"
     )
 
- 🔁 Versão original (pode gerar leituras excessivas!)
+ #🔁 Versão original (pode gerar leituras excessivas!)
 @st.cache_data(ttl=60)
 def listar_ocorrencias():
     ocorrencias = []
