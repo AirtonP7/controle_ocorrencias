@@ -142,14 +142,16 @@ def painel_dashboard_admin():
     st.markdown("### 📊 Média Diária de Chamados por Técnico")
     df_medias = df_filtrado.groupby(["Técnico", df_filtrado["Data"].dt.date]).size().reset_index(name="Chamados")
     media_por_tecnico = df_medias.groupby("Técnico")["Chamados"].mean().reset_index(name="Média por Dia")
+    media_por_tecnico["Média por Dia"] = media_por_tecnico["Média por Dia"].round(2)
     fig = px.bar(media_por_tecnico, x="Média por Dia", y="Técnico", orientation='h',
                  text="Média por Dia", title="Média de Chamados por Dia por Técnico")
     fig.update_traces(textposition="outside", textfont=dict(size=12, color=cor_texto))
     fig.update_layout(
         paper_bgcolor=fundo_grafico, plot_bgcolor=fundo_grafico,
         font=dict(color=cor_texto), title_font=dict(color=cor_texto),
-        xaxis=dict(showticklabels=True, showgrid=False),
-        yaxis=dict(showticklabels=True, showgrid=False),
+        legend_font=dict(color=cor_texto), legend_title_font=dict(color=cor_texto),
+        xaxis=dict(showticklabels=True, showgrid=False, color=cor_texto, title_font=dict(color=cor_texto), tickfont=dict(color=cor_texto)),
+        yaxis=dict(showticklabels=True, showgrid=False, color=cor_texto, title_font=dict(color=cor_texto), tickfont=dict(color=cor_texto)),
         margin=dict(t=50, b=20)
     )
     st.plotly_chart(fig, use_container_width=True)
