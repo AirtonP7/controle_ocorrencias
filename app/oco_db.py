@@ -29,16 +29,16 @@ def adicionar_ocorrencia(unidade_solicitante, usuario_solicitante,
         detalhes=f"Técnico: {tecnico_responsavel}, Status: {status_atividade}"
     )
 
-# 🔁 Versão original (pode gerar leituras excessivas!)
-#@st.cache_data(ttl=60)
-#def listar_ocorrencias():
-    #ocorrencias = []
-    #docs = db.collection("ocorrencias").order_by("data_registro", direction="DESCENDING").get()
-    #for doc in docs:
-        #ocorrencia = doc.to_dict()
-        #ocorrencia["id"] = doc.id
-        #ocorrencias.append(ocorrencia)
-    #return ocorrencias
+ 🔁 Versão original (pode gerar leituras excessivas!)
+@st.cache_data(ttl=60)
+def listar_ocorrencias():
+    ocorrencias = []
+    docs = db.collection("ocorrencias").order_by("data_registro", direction="DESCENDING").get()
+    for doc in docs:
+        ocorrencia = doc.to_dict()
+        ocorrencia["id"] = doc.id
+        ocorrencias.append(ocorrencia)
+    return ocorrencias
 
 # ✅ NOVA VERSÃO: Lista apenas ocorrências de uma data específica
 @st.cache_data(ttl=60)
