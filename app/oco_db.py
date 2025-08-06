@@ -29,10 +29,31 @@ def adicionar_ocorrencia(unidade_solicitante, usuario_solicitante,
         detalhes=f"Técnico: {tecnico_responsavel}, Status: {status_atividade}"
     )
 
+# 🔁 Versão original (pode gerar leituras excessivas!)
+#@st.cache_data(ttl=60)
+#def listar_ocorrencias():
+    #ocorrencias = []
+    #docs = db.collection("ocorrencias").order_by("data_registro", direction="DESCENDING").get()
+    #for doc in docs:
+        #ocorrencia = doc.to_dict()
+        #ocorrencia["id"] = doc.id
+        #ocorrencias.append(ocorrencia)
+    #return ocorrencias
+
+# ✅ NOVA VERSÃO: Lista apenas ocorrências de uma data específica
 @st.cache_data(ttl=60)
-def listar_ocorrencias():
+def listar_ocorrencias_por_data(data_str: str):
+    """
+    Lista ocorrências filtrando pela data (formato YYYY-MM-DD).
+    Usa cache de 60s para reduzir chamadas ao Firestore.
+    """
     ocorrencias = []
-    docs = db.collection("ocorrencias").order_by("data_registro", direction="DESCENDING").get()
+    docs = (
+        db.collection("ocorrencias")
+        .where("data_registro", "==", data_str)
+        .order_by("data_registro", direction="DESCENDING")
+        .get()
+    )
     for doc in docs:
         ocorrencia = doc.to_dict()
         ocorrencia["id"] = doc.id
@@ -72,7 +93,7 @@ def editar_ocorrencia(id_ocorrencia, nova_descricao, novo_status, nova_observaca
 def excluir_ocorrencia(id_):
     doc_ref = db.collection("ocorrencias").document(id_)
     doc = doc_ref.get()
-    
+
     descricao = ""
     if doc.exists:
         data = doc.to_dict()
