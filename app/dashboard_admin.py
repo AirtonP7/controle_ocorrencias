@@ -3,7 +3,8 @@ import pandas as pd
 import plotly.express as px
 from datetime import date, datetime
 from app.temas import aplicar_tema
-from app.conexao_banco.oco_db import listar_ocorrencias_por_data
+from app.oco_db import listar_ocorrencias_por_data
+
 
 def painel_dashboard_admin():
     st.header("📊 Painel de Indicadores - Admin")
