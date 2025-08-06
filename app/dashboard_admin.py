@@ -142,7 +142,9 @@ def painel_dashboard_admin():
     st.markdown("### 📊 Média Diária de Chamados por Técnico")
     df_medias = df_filtrado.groupby(["Técnico", df_filtrado["Data"].dt.date]).size().reset_index(name="Chamados")
     media_por_tecnico = df_medias.groupby("Técnico")["Chamados"].mean().reset_index(name="Média por Dia")
+    #media_por_tecnico["Média por Dia"] = media_por_tecnico["Média por Dia"].round(2)
     media_por_tecnico["Média por Dia"] = media_por_tecnico["Média por Dia"].round(2)
+    media_por_tecnico = media_por_tecnico.sort_values(by="Média por Dia", ascending=False)
     fig = px.bar(media_por_tecnico, x="Média por Dia", y="Técnico", orientation='h',
                  text="Média por Dia", title="Média de Chamados por Dia por Técnico")
     fig.update_traces(textposition="outside", textfont=dict(size=12, color=cor_texto))
